@@ -1,7 +1,7 @@
 {
   "scripts": {
     "lib": "pnpm run -C entry build",
-    "vike:dev": "pnpm run -C vike dev",
+    "docs:dev": "pnpm run -C docs dev",
     "app:dev": "pnpm run -C app dev",
     "postinstall": "pnpm run -r --parallel stub",
     "rm:nm": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
@@ -11,24 +11,25 @@
     "@vunk/form": "2.18.2",
     "@vunk/shared": "^0.9.2",
     "element-plus": "latest",
-    "vue": "^3.5.34"
+    "vue": "^3.5.40"
   },
   "devDependencies": {
     "@lib/internal": "workspace:*",
     "@ts-macro/tsc": "^0.3.7",
     "@tsconfig/node24": "^24.0.4",
-    "@types/node": "^25.9.1",
-    "@vitejs/plugin-vue": "^6.0.7",
-    "@vitejs/plugin-vue-jsx": "^5.1.5",
-    "@vue/language-core": "^3.3.2",
+    "@types/node": "^25.9.5",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitejs/plugin-vue-jsx": "^5.1.6",
+    "@vue/language-core": "^3.3.9",
     "@vue/tsconfig": "^0.9.1",
     "fast-glob": "^3.3.3",
-    "npm-run-all2": "^9.0.1",
+    "npm-run-all2": "^9.0.3",
     "typescript": "^6.0.3",
     "unbuild": "^3.6.1",
-    "vite": "^8.0.14",
-    "vitest": "^4.1.7",
-    "vue-tsc": "^3.3.2"
+    "vike": "^0.4.260",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.9"
   },
   "type": "module"
 }

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="15 98.4 627 625">
+<!-- vike-vue-content logo - optimized colors for depth and lightness -->
+  <defs>
+    <linearGradient id="vike-lightning" x1="280" y1="191" x2="430" y2="631" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff0" offset=".35"/>
+      <stop stop-color="#ffc300" offset=".8"/>
+    </linearGradient>
+    <!-- Left cover: lighter Vue green (front face) -->
+    <linearGradient id="coverLeft" x1="64" y1="159" x2="290" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5ae29a" offset="0"/>
+      <stop stop-color="#42b883" offset="0.5"/>
+      <stop stop-color="#359e6e" offset="1"/>
+    </linearGradient>
+    <!-- Right cover: darker Vue green (creates depth) -->
+    <linearGradient id="coverRight" x1="400" y1="178" x2="590" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3d9e6e" offset="0"/>
+      <stop stop-color="#308a5e" offset="0.5"/>
+      <stop stop-color="#246e48" offset="1"/>
+    </linearGradient>
+    <!-- Vike metallic gradient -->
+    <linearGradient id="vikeMetal" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#e8e8e8" offset="0"/>
+      <stop stop-color="#ccc" offset="0.5"/>
+      <stop stop-color="#a8a8a8" offset="1"/>
+    </linearGradient>
+    <clipPath id="rightClip">
+      <path d="m394.9 177.8-35.1 178.2h107.7l-171.5 297.6c9.6 2.7 21.4 6 31.9 9.4 58.5-18.6 136.5-36.4 261.1-36v-468c-58.7-0.6-135.6 4.2-194.1 18.8z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Left book cover (lighter front) -->
+  <path d="m64 159v467.9h24.3c48.7 0 108.9 2.8 172.1 17.1l33.6-179h-106.5l156.7-273.5-17 7.5c-60.7-24.5-145.1-36-238.9-36h-24.3z" fill="url(#coverLeft)"/>
+
+  <!-- Right book cover (darker back, creates depth) -->
+  <path d="m394.9 177.8-35.1 178.2h107.7l-171.5 297.6c9.6 2.7 21.4 6 31.9 9.4 58.5-18.6 136.5-36.4 261.1-36v-468c-58.7-0.6-135.6 4.2-194.1 18.8z" fill="url(#coverRight)"/>
+
+  <!-- Page edges - Vike metallic style, along right edge of right book -->
+  <g clip-path="url(#rightClip)">
+    <rect x="576" y="155" width="3.5" height="478" rx="0.5" fill="url(#vikeMetal)" opacity="0.5"/>
+    <rect x="581" y="155" width="2.5" height="478" rx="0.5" fill="url(#vikeMetal)" opacity="0.4"/>
+    <rect x="585" y="155" width="2" height="478" rx="0.5" fill="url(#vikeMetal)" opacity="0.3"/>
+  </g>
+
+  <!-- Lightning bolt (Vike gradient) -->
+  <polygon points="227.8 442.5 372.6 191.3 335 379 428.4 378.6 282.9 631.1 321.2 442"
+           fill="url(#vike-lightning)"/>
+</svg>

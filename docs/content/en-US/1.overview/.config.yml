@@ -1,0 +1,5 @@
+navigation:
+  label: Overview
+header:
+  enable: true
+redirect: introduction
