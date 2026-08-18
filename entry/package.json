@@ -1,31 +1,46 @@
 {
-  "name": "@vunk/template",
+  "name": "dshflow",
   "version": "0.0.1",
-  "description": "A template for Vue projects",
-  "author": "EralChen",
+  "description": "DeepSeek Harness plugin: render the live Cordis plugin tree as a flow diagram, powered by @vunk/flow.",
   "license": "MIT",
   "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "flow",
+    "logicflow",
     "vue"
   ],
+  "type": "module",
+  "main": "plugin/index.mjs",
+  "types": "plugin/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./plugin/index.d.ts",
+      "default": "./plugin/index.mjs"
+    },
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "plugin",
+    "web",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
     "build": "bash ./build.sh"
   },
-  "exports": {
-    "./components/hello-world": {
-      "import": "./components/hello-world/index.es.js",
-      "types": "./components/hello-world/index.d.ts"
-    },
-    "./composables/hello": {
-      "import": "./composables/hello/index.es.js",
-      "types": "./composables/hello/index.d.ts"
-    },
-    "./shared": {
-      "import": "./shared/index.es.js",
-      "types": "./shared/index.d.ts"
-    },
-    "./shared/types": {
-      "import": "./shared/types/index.es.js",
-      "types": "./shared/types/index.d.ts"
-    }
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1"
   }
 }

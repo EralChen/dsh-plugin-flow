@@ -1,5 +1,5 @@
 {
-  "name": "@vunk-template/composables",
+  "name": "@dshflow/composables",
   "private": true,
   "scripts": {
     "build": "run-p build:es build:types",

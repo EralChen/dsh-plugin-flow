@@ -1,0 +1,8 @@
+# dshflow bundle patch — inserted as one row by the dsh profile composer.
+# `dsh plugin --profile <name> add dshflow` reconciles this package into the
+# profile's `dsh.profile.bundles` automatically because package.json declares
+# `dsh.bundle.patch`.
+
+- insert:
+    - id: dshflow
+      name: 'dshflow'

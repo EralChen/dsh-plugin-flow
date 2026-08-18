@@ -1,5 +1,14 @@
 {
-  "name": "@vunk-template/components",
+  "name": "@dshflow/components",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./dsh-flow": "./dsh-flow/index.ts",
+    "./dsh-node": "./dsh-node/index.ts"
+  },
   "scripts": {
     "build": "run-p build:es build:types",
     "build:es": "vite build",

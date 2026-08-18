@@ -1,10 +1,17 @@
 {
-  "name": "@vunk-markdown/shared",
+  "name": "@dshflow/shared",
   "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./catalog": "./catalog.ts",
+    "./types/dsh-flow": "./types/dsh-flow.ts"
+  },
   "scripts": {
     "build": "run-p build:es build:types",
     "build:es": "vite build",
     "build:types": "vue-tsc"
-  },
-  "type": "module"
+  }
 }

@@ -159,3 +159,5 @@ dist
 cdk.out
 
 entry/dist/
+plugin/dist/
+plugin/web/
