@@ -56,9 +56,15 @@ function onLoad(e: { lf: LogicFlow }): void {
     const properties = data?.properties as DshFlowNodeProps | undefined
     if (properties !== undefined) emit('node-click', properties)
   })
-  // Layout once nodes have mounted and vue-node-registry measured their sizes.
+  // Layout after nodes have mounted and vue-node-registry measured their
+  // sizes. Debounce so rapid re-renders don't stack concurrent layouts.
+  let layoutTimer: ReturnType<typeof setTimeout> | undefined
   e.lf.on('graph:rendered', () => {
-    void autoLayout()
+    if (layoutTimer !== undefined) return
+    layoutTimer = setTimeout(() => {
+      layoutTimer = undefined
+      void autoLayout()
+    }, 100)
   })
 }
 

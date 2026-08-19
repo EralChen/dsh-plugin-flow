@@ -12,6 +12,7 @@
 import type { DshFlowCategory } from './types/dsh-flow'
 
 export const CATEGORIES = {
+  structural: { id: 'structural', label: 'Loader / Structure', color: '#9ca3af' },
   bundle: { id: 'bundle', label: 'Bundle / Profile', color: '#7c3aed' },
   core: { id: 'core', label: 'Core / Host', color: '#64748b' },
   llm: { id: 'llm', label: 'LLM / Model', color: '#2563eb' },
@@ -43,8 +44,20 @@ export const CATEGORIES = {
 
 export type CategoryId = keyof typeof CATEGORIES
 
+/** Look up a category by its explicit id, falling back to `other`. */
+export function categoryById(id: string): DshFlowCategory {
+  return (CATEGORIES as Record<string, DshFlowCategory>)[id] ?? CATEGORIES.other
+}
+
 /** Exact-name overrides (most tool-* packages diverge from the `dsh-tool-` default). */
 const OVERRIDES: Record<string, CategoryId> = {
+  'root': 'structural',
+  'Loader': 'structural',
+  'Include': 'structural',
+  'Group': 'structural',
+  'isolate': 'structural',
+  'PresetTree': 'structural',
+  'scope': 'structural',
   '@deepseek-ai/dsh-tools': 'tools',
   '@deepseek-ai/dsh-tool-bash': 'terminal',
   '@deepseek-ai/dsh-tool-pwsh': 'terminal',

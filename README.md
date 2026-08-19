@@ -193,11 +193,11 @@ components/
 
 ```text
 dshflow/
-  plugin/            # dsh 宿主插件源码（内部包，构建产物组装进 entry）
+  plugin/            # dsh 宿主插件源码（内部包，构建产物组装进 dshflow）
   components/        # Vue 组件库（DshFlow + 各插件节点组件）
   shared/            # 共享类型与 catalog（插件名 -> 分类/节点组件映射）
   app/               # 可视化前端应用（构建成静态资源，由 plugin 托管）
-  entry/             # 发布入口：组装成 dshflow npm 包（plugin + web + cordis.patch.yml）
+  dshflow/           # 发布目录：组装成 dshflow npm 包（plugin + web + cordis.patch.yml）
   cordis.patch.yml   # dshflow 的 bundle 补丁（insert 一行 dshflow）
 ```
 
@@ -211,8 +211,8 @@ pnpm install
 # 可视化前端（app）
 pnpm app:dev          # 开发预览（连不到 dsh 时用 fixture 数据）
 
-# 组装发布包（entry/）
-pnpm lib              # 构建前端 + 插件，组装成 dshflow 包（cd entry && npm pack --dry-run 预览）
+# 组装发布包（dshflow/）
+pnpm lib              # 构建前端 + 插件，组装成 dshflow 包（cd dshflow && npm pack --dry-run 预览）
 
 # 插件（plugin，仅构建插件本体）
 pnpm plugin:build
@@ -224,9 +224,9 @@ pnpm plugin:build
 2. 用本地路径装进 profile：
 
    ```sh
-   dsh plugin --profile web add link:$(pwd)/entry
+   dsh plugin --profile web add link:./dshflow
    # 或手动：
-   #   cd "$DSH_HOME/profiles/web" && pnpm add link:$(pwd)/entry
+   #   cd "$DSH_HOME/profiles/web" && pnpm add link:$(pwd)/dshflow
    ```
 
 3. `dsh web` 后访问 `http://127.0.0.1:3080/dshflow/`。

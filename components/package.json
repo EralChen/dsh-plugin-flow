@@ -7,7 +7,8 @@
   "exports": {
     ".": "./index.ts",
     "./dsh-flow": "./dsh-flow/index.ts",
-    "./dsh-node": "./dsh-node/index.ts"
+    "./dsh-node": "./dsh-node/index.ts",
+    "./json-viewer": "./json-viewer/index.ts"
   },
   "scripts": {
     "build": "run-p build:es build:types",

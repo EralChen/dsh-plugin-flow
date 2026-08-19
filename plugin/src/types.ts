@@ -25,12 +25,30 @@ export interface DshFlowNode {
   name: string
   /** Lifecycle state of this fiber. */
   state: DshFlowState
+  /**
+   * True when this fiber has no runtime name of its own (`ctx.inject()` /
+   * anonymous `ctx.plugin()` registrations). Its `name` is then inherited from
+   * the nearest named ancestor; the UI folds these away.
+   */
+  anonymous?: boolean
   /** Services provided by this fiber's subtree, sorted. */
   provides: string[]
   /** Services declared in this fiber's `inject`. */
   inject: string[]
+  /** Safe projection of this fiber's validated `config` (depth/length capped). */
+  config?: unknown
   /** Mounted child fibers. */
   children: DshFlowNode[]
+}
+
+/** Safe summary of a live service value (never the raw object). */
+export interface ServiceSummary {
+  /** `typeof` of the value. */
+  type: string
+  /** Constructor name for object values. */
+  ctor?: string
+  /** Own enumerable keys, capped. */
+  keys?: string[]
 }
 
 /** One live `ctx.<key>` service and its owning fiber. */
@@ -41,6 +59,17 @@ export interface DshFlowService {
   owner: string
   /** Lifecycle state of the owning fiber. */
   state: DshFlowState
+  /** Safe summary of the current service value. */
+  summary?: ServiceSummary
+}
+
+/** Deeper projection of one specific service's value (opt-in, per name). */
+export interface DshFlowServiceDetail {
+  name: string
+  owner: string
+  state: DshFlowState
+  /** Safe serialization of the service value, with a deeper budget than the tree snapshot. */
+  value: unknown
 }
 
 /** Complete snapshot of the running plugin tree. */

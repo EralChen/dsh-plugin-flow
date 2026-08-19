@@ -5,23 +5,27 @@
  * as JSON + SSE, plus the `@vunk/flow` visualization that renders it.
  *
  * Namespace plugin (named exports, no default — see the dsh plugin contract).
- * @module dshflow
+ * Zero runtime dependencies (cordis/webserver are type-only).
+ * @module @dshflow/plugin
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import { Config } from './config'
+import type {} from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-agent'
+import { DEFAULT_BASE_PATH, DEFAULT_POLL_INTERVAL_MS, resolveConfig } from './config'
 import type { Config as DshFlowConfig } from './config'
+import { sendDebugMessage } from './debug'
 import { registerDshFlowRoutes } from './server'
-import { buildDshFlowTree } from './tree'
+import { buildDshFlowTree, getServiceDetail } from './tree'
 
 export const name = 'dshflow'
-export const inject = ['webServer']
+export const inject = ['webServer', 'sessions', 'agents']
 
-export { Config, buildDshFlowTree }
-export type { Config as DshFlowConfig }
+export { buildDshFlowTree, getServiceDetail, sendDebugMessage, resolveConfig, DEFAULT_BASE_PATH, DEFAULT_POLL_INTERVAL_MS }
+export type { Config as DshFlowConfig, ResolvedConfig } from './config'
 export type * from './types'
 
-export function apply(ctx: Context, config: DshFlowConfig): void {
-  registerDshFlowRoutes(ctx, config)
+export function apply(ctx: Context, config?: DshFlowConfig): void {
+  registerDshFlowRoutes(ctx, resolveConfig(config))
 }

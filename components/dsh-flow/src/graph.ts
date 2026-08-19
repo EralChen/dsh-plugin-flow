@@ -5,7 +5,7 @@
  */
 
 import type LogicFlow from '@logicflow/core'
-import { categorize } from '@dshflow/shared/catalog'
+import { CATEGORIES, categoryById, categorize } from '@dshflow/shared/catalog'
 import type { DshFlowNode, DshFlowState, DshFlowTree } from '@dshflow/shared/types/dsh-flow'
 
 /** What a rendered node exposes to the click handler / detail panel. */
@@ -15,6 +15,7 @@ export interface DshFlowNodeProps {
   state: DshFlowState
   provides: string[]
   inject: string[]
+  config?: unknown
   color: string
   categoryLabel: string
 }
@@ -23,12 +24,24 @@ function nodeId(node: DshFlowNode): string {
   return node.id === '' ? 'root' : node.id
 }
 
+/** Loader / scaffolding fiber names are rendered as a distinct gray category. */
+export const STRUCTURAL_NAMES = new Set(['Loader', 'Include', 'Group', 'isolate', 'PresetTree', 'scope'])
+
 export function buildGraphData(tree: DshFlowTree): LogicFlow.GraphConfigData {
   const nodes: LogicFlow.GraphConfigData['nodes'] = []
   const edges: LogicFlow.GraphConfigData['edges'] = []
 
-  const walk = (node: DshFlowNode): void => {
-    const category = categorize(node.name)
+  const walk = (node: DshFlowNode, parentId: string | undefined): void => {
+    // Collapse only anonymous fibers (ctx.inject scoped registrations): they
+    // have no identity of their own, so their children attach to the current
+    // parent. Structural nodes stay visible — they carry real hierarchy
+    // (bundle layer, agent-preset scopes) — but render as a gray category.
+    if (node.anonymous === true) {
+      for (const child of node.children) walk(child, parentId)
+      return
+    }
+
+    const category = node.categoryId !== undefined ? categoryById(node.categoryId) : categorize(node.name)
     const id = nodeId(node)
     nodes.push({
       id,
@@ -41,23 +54,24 @@ export function buildGraphData(tree: DshFlowTree): LogicFlow.GraphConfigData {
         state: node.state,
         provides: node.provides,
         inject: node.inject,
+        config: node.config,
         color: category.color,
         categoryLabel: category.label,
       } satisfies DshFlowNodeProps,
     })
-    for (const child of node.children) {
+    if (parentId !== undefined) {
       edges.push({
-        id: `e:${id}:${nodeId(child)}`,
+        id: `e:${parentId}:${id}`,
         type: 'VkEdgeMaxkb',
-        sourceNodeId: id,
-        targetNodeId: nodeId(child),
-        sourceAnchorId: `${id}-bottom`,
-        targetAnchorId: `${nodeId(child)}-top`,
+        sourceNodeId: parentId,
+        targetNodeId: id,
+        sourceAnchorId: `${parentId}-bottom`,
+        targetAnchorId: `${id}-top`,
       })
-      walk(child)
     }
+    for (const child of node.children) walk(child, id)
   }
 
-  walk(tree.root)
+  walk(tree.root, undefined)
   return { nodes, edges }
 }

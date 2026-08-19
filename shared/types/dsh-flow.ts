@@ -16,15 +16,36 @@ export interface DshFlowNode {
   id: string
   name: string
   state: DshFlowState
+  anonymous?: boolean
+  /**
+   * Explicit presentation category id (set by client-side projections);
+   * overrides `categorize(name)`.
+   */
+  categoryId?: string
   provides: string[]
   inject: string[]
+  config?: unknown
   children: DshFlowNode[]
+}
+
+export interface ServiceSummary {
+  type: string
+  ctor?: string
+  keys?: string[]
 }
 
 export interface DshFlowService {
   name: string
   owner: string
   state: DshFlowState
+  summary?: ServiceSummary
+}
+
+export interface DshFlowServiceDetail {
+  name: string
+  owner: string
+  state: DshFlowState
+  value: unknown
 }
 
 export interface DshFlowTree {

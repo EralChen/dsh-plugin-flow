@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENTRY_DIR="${ROOT_DIR}/entry"
+ENTRY_DIR="${ROOT_DIR}/dshflow"
 
 # 1. Build the visualization frontend (app -> plugin/web).
 echo "[dshflow] build frontend"
@@ -12,7 +12,11 @@ pnpm -C "${ROOT_DIR}/app" run build
 echo "[dshflow] build host plugin"
 pnpm -C "${ROOT_DIR}/plugin" run build
 
-# 3. Assemble the publishable package under entry/.
+# 3. Build the client bundle (client -> dshflow/lib/client.js).
+echo "[dshflow] build client bundle"
+pnpm -C "${ROOT_DIR}/client" run build
+
+# 4. Assemble the publishable package under dshflow/.
 echo "[dshflow] assemble ${ENTRY_DIR}"
 rm -rf "${ENTRY_DIR}/plugin" "${ENTRY_DIR}/web"
 mkdir -p "${ENTRY_DIR}/plugin" "${ENTRY_DIR}/web"

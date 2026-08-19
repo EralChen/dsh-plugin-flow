@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.app.json",
+  "include": [
+    "../env.d.ts",
+    "src/**/*.vue",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "dist",
+    "vite.config.ts"
+  ],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "paths": {
+      "@dshflow/components/*": ["../components/*"],
+      "@dshflow/shared/*": ["../shared/*"]
+    }
+  }
+}

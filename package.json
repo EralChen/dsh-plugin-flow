@@ -1,10 +1,11 @@
 {
   "scripts": {
-    "lib": "pnpm run -C entry build",
+    "lib": "pnpm run -C dshflow build",
     "docs:dev": "pnpm run -C docs dev",
     "app:dev": "pnpm run -C app dev",
     "app:build": "pnpm run -C app build",
     "plugin:build": "pnpm run -C plugin build",
+    "client:build": "pnpm run -C client build",
     "postinstall": "pnpm run -r --parallel stub",
     "rm:nm": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },

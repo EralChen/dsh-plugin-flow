@@ -6,7 +6,11 @@
 .dev/
 .forks/
 docs/.data/
-entry/**/
+dshflow/**/
+dshflow/cordis.patch.yml
+dshflow/README.md
+dshflow/LICENSE
+dshflow/index.css
 
 # MacOS
 .DS_Store
@@ -158,6 +162,6 @@ dist
 .cdk.staging
 cdk.out
 
-entry/dist/
+dshflow/dist/
 plugin/dist/
 plugin/web/

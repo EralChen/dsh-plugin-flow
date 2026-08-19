@@ -9,17 +9,20 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { extname, join, normalize, resolve, sep } from 'node:path'
+import { dirname, extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import type { Config } from './config'
-import { buildDshFlowTree } from './tree'
+import type {} from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-agent'
+import type { ResolvedConfig } from './config'
+import { sendDebugMessage } from './debug'
+import { buildDshFlowTree, getServiceDetail } from './tree'
 import type { DshFlowTree } from './types'
 
 /** Bundled frontend dist, resolved relative to this plugin's own location. */
-const DIST_ROOT = fileURLToPath(new URL('../web/', import.meta.url))
-const DIST_INDEX = join(DIST_ROOT, 'index.html')
+const DIST_INDEX = fileURLToPath(new URL('../web/index.html', import.meta.url))
+const DIST_ROOT = dirname(DIST_INDEX)
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -40,6 +43,16 @@ function sendJson(res: ServerResponse, data: unknown): void {
   const body = JSON.stringify(data, null, 2)
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
   res.end(body)
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  let body = ''
+  for await (const chunk of req) body += chunk
+  try {
+    return JSON.parse(body) as Record<string, unknown>
+  } catch {
+    return {}
+  }
 }
 
 /** Minimal SPA static server: traversal is 403, misses fall back to index.html. */
@@ -74,16 +87,17 @@ async function serveStatic(sub: string, res: ServerResponse): Promise<void> {
 }
 
 /** Register every dshflow route on the shared webserver and the change feed. */
-export function registerDshFlowRoutes(ctx: Context, config: Config): void {
+export function registerDshFlowRoutes(ctx: Context, config: ResolvedConfig): void {
   const base = config.basePath.replace(/\/+$/, '') || '/dshflow'
   const clients = new Set<ServerResponse>()
-  let lastJson = ''
+  let lastTreeSnapshot: DshFlowTree | undefined
+  let lastTreeKey = ''
 
   const broadcast = (tree: DshFlowTree): void => {
-    const payload = `event: tree\ndata: ${JSON.stringify(tree)}\n\n`
+    const message = `event: tree\ndata: ${JSON.stringify(tree)}\n\n`
     for (const res of clients) {
       try {
-        res.write(payload)
+        res.write(message)
       } catch {
         clients.delete(res)
       }
@@ -98,9 +112,11 @@ export function registerDshFlowRoutes(ctx: Context, config: Config): void {
       ctx.logger?.warn?.(error instanceof Error ? error : new Error(String(error)))
       return
     }
-    const json = JSON.stringify(tree)
-    if (json === lastJson) return
-    lastJson = json
+    // `generatedAt` changes every rebuild; compare the structural part only.
+    const key = JSON.stringify({ root: tree.root, services: tree.services })
+    if (key === lastTreeKey) return
+    lastTreeKey = key
+    lastTreeSnapshot = tree
     broadcast(tree)
   }
 
@@ -110,20 +126,43 @@ export function registerDshFlowRoutes(ctx: Context, config: Config): void {
       'cache-control': 'no-cache, no-transform',
       connection: 'keep-alive',
     })
-    if (lastJson !== '') res.write(`event: tree\ndata: ${lastJson}\n\n`)
+    if (lastTreeSnapshot !== undefined) res.write(`event: tree\ndata: ${JSON.stringify(lastTreeSnapshot)}\n\n`)
     clients.add(res)
     req.on('close', () => clients.delete(res))
   }
 
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    const pathname = new URL(req.url ?? '/', 'http://x').pathname
+    const url = new URL(req.url ?? '/', 'http://x')
+    const pathname = url.pathname
     const sub = pathname.slice(base.length) || '/'
     if (sub === '/api/tree') {
       sendJson(res, buildDshFlowTree(ctx))
       return
     }
+    if (sub === '/api/debug' && req.method === 'POST') {
+      const body = await readJsonBody(req)
+      const result = sendDebugMessage(ctx, String(body.text ?? ''))
+      if (!result.ok) {
+        res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify(result))
+        return
+      }
+      sendJson(res, result)
+      return
+    }
     if (sub === '/api/events') {
       openEvents(req, res)
+      return
+    }
+    const serviceMatch = /^\/api\/service\/([^/]+)$/.exec(sub)
+    if (serviceMatch !== null) {
+      const detail = getServiceDetail(ctx, decodeURIComponent(serviceMatch[1]!))
+      if (detail === undefined) {
+        res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify({ error: 'service not found' }))
+        return
+      }
+      sendJson(res, detail)
       return
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
