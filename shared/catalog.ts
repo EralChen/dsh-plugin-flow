@@ -58,6 +58,8 @@ const OVERRIDES: Record<string, CategoryId> = {
   'isolate': 'structural',
   'PresetTree': 'structural',
   'scope': 'structural',
+  'webServer': 'core',
+  'logger': 'core',
   '@deepseek-ai/dsh-tools': 'tools',
   '@deepseek-ai/dsh-tool-bash': 'terminal',
   '@deepseek-ai/dsh-tool-pwsh': 'terminal',
@@ -82,8 +84,7 @@ const OVERRIDES: Record<string, CategoryId> = {
 }
 
 /** Ordered prefix rules; first match wins. Order matters. */
-const RULES: Array<[RegExp, CategoryId]> = [
-  [/^@deepseek-ai\/cordis-plugin-/, 'core'],
+const RULES: Array<[RegExp, CategoryId]> = [  [/^@deepseek-ai\/cordis-plugin-/, 'core'],
   [/^@deepseek-ai\/dsh-typert/, 'core'],
   [/^@deepseek-ai\/dsh-api-/, 'core'],
   [/^@deepseek-ai\/dsh-host-/, 'core'],
@@ -133,10 +134,63 @@ const RULES: Array<[RegExp, CategoryId]> = [
   [/^@deepseek-ai\/dsh-base/, 'bundle'],
 ]
 
+/**
+ * Short-name rules: the tree carries `fiber.name` (the cordis short name,
+ * e.g. `tool-bash`), not the full `@deepseek-ai/dsh-tool-bash` package name.
+ * These prefixes recover the same categories from the short names.
+ */
+const SHORT_RULES: Array<[RegExp, CategoryId]> = [
+  [/^tool-(bash|pwsh|terminal|shell)/, 'terminal'],
+  [/^tool-fs/, 'fs'],
+  [/^tool-skill/, 'skill'],
+  [/^tool-goal/, 'goal'],
+  [/^tool-subagent/, 'subagent'],
+  [/^tool-ralph/, 'subagent'],
+  [/^tool-workflow/, 'workflow'],
+  [/^tool-web/, 'web'],
+  [/^tool-jobs/, 'jobs'],
+  [/^tool-lsp/, 'lsp'],
+  [/^tool-ask-user/, 'permission'],
+  [/^tool-cordis/, 'core'],
+  [/^tool-session-query/, 'session'],
+  [/^tool-/, 'tools'],
+  [/^llm/, 'llm'],
+  [/^agent/, 'agent'],
+  [/^session/, 'session'],
+  [/^goal/, 'goal'],
+  [/^plan/, 'plan'],
+  [/^subagent/, 'subagent'],
+  [/^workflow/, 'workflow'],
+  [/^web/, 'web'],
+  [/^mcp/, 'mcp'],
+  [/^lsp/, 'lsp'],
+  [/^jobs/, 'jobs'],
+  [/^skill/, 'skill'],
+  [/^system-prompt/, 'system-prompt'],
+  [/^command/, 'command'],
+  [/^ui-/, 'client-ui'],
+  [/^client-/, 'client-ui'],
+  [/^storage/, 'storage'],
+  [/^sandbox/, 'sandbox'],
+  [/^permission/, 'permission'],
+  [/^settings/, 'settings'],
+  [/^telemetry/, 'telemetry'],
+  [/^compaction/, 'compaction'],
+  [/^spill/, 'compaction'],
+  [/^terminal/, 'terminal'],
+  [/^shell/, 'terminal'],
+  [/^bash/, 'terminal'],
+  [/^pwsh/, 'terminal'],
+  [/^fs/, 'fs'],
+]
+
 /** Resolve a plugin name to its presentation category. */
 export function categorize(name: string): DshFlowCategory {
   const override = OVERRIDES[name]
   if (override !== undefined) return CATEGORIES[override]
+  for (const [pattern, id] of SHORT_RULES) {
+    if (pattern.test(name)) return CATEGORIES[id]
+  }
   for (const [pattern, id] of RULES) {
     if (pattern.test(name)) return CATEGORIES[id]
   }

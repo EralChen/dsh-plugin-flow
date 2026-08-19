@@ -1,13 +1,16 @@
 <script lang="ts" setup>
 import { computed, shallowRef } from 'vue'
 import type LogicFlow from '@logicflow/core'
+import { Graph } from '@antv/graphlib'
+// Deep-import dagre only: @antv/layout's index re-exports a web-worker
+// supervisor, which the dsh client loader cannot serve as a separate asset.
+import { DagreLayout } from '@antv/layout/lib/dagre'
 import { VkLogicFlow } from '@vunk/flow/components/logic-flow'
 import { VkLogicFlowRender } from '@vunk/flow/components/logic-flow-render'
 import { VkEdgeMaxkb } from '@vunk/flow/components/edge-maxkb'
-import { Dagre } from '@vunk/flow/shared/plugins'
 import type { DshFlowTree } from '@dshflow/shared/types/dsh-flow'
 import DshNode from '@dshflow/components/dsh-node'
-import { buildGraphData } from './graph'
+import { buildGraphData, filterSearchGraph } from './graph'
 import type { DshFlowNodeProps } from './graph'
 
 defineOptions({
@@ -15,39 +18,71 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   tree: DshFlowTree
-  /** Dagre 方向：TB 上下、LR 左右、BT 下上、RL 右左。 */
-  rankdir?: 'TB' | 'BT' | 'LR' | 'RL'
-}>(), {
-  rankdir: 'TB',
-})
+  /** When non-empty, keep only matching nodes (+ their ancestor chain). */
+  search?: string
+}>()
 
 const emit = defineEmits<{
   (e: 'node-click', payload: DshFlowNodeProps): void
 }>()
 
 const lf = shallowRef<LogicFlow>()
-const graphData = computed(() => buildGraphData(props.tree))
+const graphData = computed(() => {
+  const full = buildGraphData(props.tree)
+  const q = props.search?.trim() ?? ''
+  return q === '' ? full : filterSearchGraph(full, q)
+})
 
-const flowOptions = computed(() => ({
-  grid: true,
-  plugins: [Dagre],
-  pluginsOptions: { dagre: { rankdir: props.rankdir } },
-}))
+const flowOptions = { grid: true }
 
-interface DagreExtension {
-  layout: () => Promise<void>
+/**
+ * Dagre base layout (the same engine vunk-flow's Dagre plugin uses): lay the
+ * tree out, apply every node position, then fit the view.
+ */
+async function layoutGraph(): Promise<void> {
+  const lfInst = lf.value
+  if (lfInst === undefined) return
+  const nodes = (graphData.value.nodes ?? []).map((node) => {
+    const model = lfInst.getNodeModelById(String(node.id))
+    return { id: String(node.id), width: model?.width || 220, height: model?.height || 56 }
+  })
+  const edges = (graphData.value.edges ?? []).map(edge => ({
+    sourceNodeId: String(edge.sourceNodeId),
+    targetNodeId: String(edge.targetNodeId),
+  }))
+
+  const dagre = new DagreLayout({
+    rankdir: 'TB',
+    nodeSize(node: { id?: unknown; data?: { width?: number; height?: number } }) {
+      const data = node.data as { width?: number; height?: number }
+      return [data.width ?? 220, data.height ?? 56]
+    },
+  } as never)
+  const graph = new Graph({
+    nodes: nodes.map(node => ({
+      id: node.id,
+      data: { x: 0, y: 0, width: node.width, height: node.height },
+    })),
+    edges: edges.map((edge, index) => ({
+      id: `dsh-e-${index}`,
+      source: edge.sourceNodeId,
+      target: edge.targetNodeId,
+      data: {},
+    })),
+  })
+  const layoutData = await dagre.execute(graph as never)
+  for (const node of layoutData.nodes ?? []) {
+    const data = node.data as { x?: number; y?: number }
+    // moveNode2Coordinate updates the node model AND its edges.
+    lfInst.graphModel.moveNode2Coordinate(String(node.id), data.x ?? 0, data.y ?? 0)
+  }
+  lfInst.fitView()
 }
 
-function resolveDagre(): DagreExtension | null {
-  const extension = lf.value?.extension?.dagre as Partial<DagreExtension> | undefined
-  if (extension === undefined || typeof extension.layout !== 'function') return null
-  return extension as DagreExtension
-}
-
-async function autoLayout(): Promise<void> {
-  await resolveDagre()?.layout()
+function autoLayout(): void {
+  void layoutGraph()
 }
 
 function onLoad(e: { lf: LogicFlow }): void {
@@ -63,7 +98,7 @@ function onLoad(e: { lf: LogicFlow }): void {
     if (layoutTimer !== undefined) return
     layoutTimer = setTimeout(() => {
       layoutTimer = undefined
-      void autoLayout()
+      void layoutGraph()
     }, 100)
   })
 }

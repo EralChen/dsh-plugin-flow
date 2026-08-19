@@ -12,12 +12,15 @@ import type { DshFlowNode, DshFlowState, DshFlowTree } from '@dshflow/shared/typ
 export interface DshFlowNodeProps {
   id: string
   name: string
+  packageName?: string
   state: DshFlowState
   provides: string[]
   inject: string[]
   config?: unknown
   color: string
   categoryLabel: string
+  /** Client-side: true when this node matched the active search query. */
+  matched?: boolean
 }
 
 function nodeId(node: DshFlowNode): string {
@@ -51,6 +54,7 @@ export function buildGraphData(tree: DshFlowTree): LogicFlow.GraphConfigData {
       properties: {
         id: node.id,
         name: node.name,
+        packageName: node.packageName,
         state: node.state,
         provides: node.provides,
         inject: node.inject,
@@ -74,4 +78,55 @@ export function buildGraphData(tree: DshFlowTree): LogicFlow.GraphConfigData {
 
   walk(tree.root, undefined)
   return { nodes, edges }
+}
+
+/**
+ * Keep only nodes whose name contains `query` (case-insensitive) plus their
+ * ancestor chain, and mark the matches for highlight. An empty query (or no
+ * match) returns the full graph unchanged so the tree never vanishes.
+ */
+export function filterSearchGraph(
+  data: LogicFlow.GraphConfigData,
+  query: string,
+): LogicFlow.GraphConfigData {
+  const q = query.trim().toLowerCase()
+  if (q === '') return data
+
+  const matchedIds = new Set<string>()
+  for (const node of data.nodes ?? []) {
+    const name = String(node.properties?.name ?? '').toLowerCase()
+    if (name.includes(q)) matchedIds.add(String(node.id))
+  }
+  if (matchedIds.size === 0) return data
+
+  // Walk edges up from every match to keep the ancestor chain.
+  const parent = new Map<string, string>()
+  for (const edge of data.edges ?? []) {
+    if (typeof edge.sourceNodeId === 'string' && typeof edge.targetNodeId === 'string') {
+      parent.set(edge.targetNodeId, edge.sourceNodeId)
+    }
+  }
+  const keep = new Set<string>()
+  for (const id of matchedIds) {
+    let current: string | undefined = id
+    while (current !== undefined && !keep.has(current)) {
+      keep.add(current)
+      current = parent.get(current)
+    }
+  }
+
+  return {
+    nodes: (data.nodes ?? []).map((node) => {
+      if (typeof node.id !== 'string' || !keep.has(node.id)) return undefined
+      if (!matchedIds.has(node.id)) return node
+      const properties = node.properties as DshFlowNodeProps | undefined
+      return { ...node, properties: { ...properties, matched: true } }
+    }).filter((node): node is NonNullable<typeof node> => node !== undefined),
+    edges: (data.edges ?? []).filter(edge =>
+      typeof edge.sourceNodeId === 'string'
+      && typeof edge.targetNodeId === 'string'
+      && keep.has(edge.sourceNodeId)
+      && keep.has(edge.targetNodeId)
+    ),
+  }
 }

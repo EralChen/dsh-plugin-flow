@@ -30,34 +30,64 @@ function stateOf(fiber: Fiber): DshFlowState {
 }
 
 /**
- * Project an arbitrary runtime value into a bounded, JSON-safe shape: strings
- * are length-capped, collections are key/entry capped, and cycles/functions/
- * symbols/bigints become markers. Configs are read-only facts; never expose a
- * live object.
+ * Resolve a fiber's full package name (`@deepseek-ai/dsh-tool-bash`) from the
+ * Loader entry that mounted it — no guessing. The cordis base `Fiber` has no
+ * `entry`; the loader package augments it (and fills it for every fiber under
+ * a loader entry), so read it through a narrow structural cast to keep this
+ * plugin free of a loader type dependency. Walks up the parent chain for
+ * sub-fibers that inherit a mounted package.
  */
-function safeSerialize(value: unknown, seen: WeakSet<object> = new WeakSet(), depth = 0, maxDepth = 4): unknown {
-  if (value === null || value === undefined) return value
-  if (typeof value === 'string') return value.length > 2000 ? `${value.slice(0, 2000)}…[truncated]` : value
-  if (typeof value === 'number' || typeof value === 'boolean') return value
-  if (typeof value === 'bigint') return `[BigInt ${value}]`
-  if (typeof value === 'function') return `[Function ${(value as (...args: unknown[]) => unknown).name || 'anonymous'}]`
-  if (typeof value === 'symbol') return '[Symbol]'
-  if (depth >= maxDepth) return '[MaxDepth]'
+function packageNameOf(fiber: Fiber): string | undefined {
+  let current: Fiber | undefined = fiber
+  while (current !== undefined) {
+    const entry = (current as unknown as { entry?: { options?: { name?: string } } }).entry
+    if (entry?.options?.name !== undefined && entry.options.name !== '') {
+      return entry.options.name
+    }
+    const parentFiber: Fiber | undefined = current.parent?.fiber
+    if (parentFiber === undefined || parentFiber === current) break
+    current = parentFiber
+  }
+  return undefined
+}
 
-  if (seen.has(value)) return '[Circular]'
+/** Structured marker for values JSON cannot carry (functions, cycles, depth…). */
+function marker(kind: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return { $dsh: kind, ...extra }
+}
+
+/**
+ * Project an arbitrary runtime value into a bounded, JSON-safe shape. JSON
+ * cannot carry functions/cycles/bigints, so those become structured markers
+ * (`{ $dsh: ... }`) the viewer renders as quiet labels instead of fake data.
+ * Budgets are generous (depth 32, 500 keys/items, 8k strings) so truncation
+ * markers are rare; the viewer can always show more of what IS serialized.
+ */
+function safeSerialize(value: unknown, seen: WeakSet<object> = new WeakSet(), depth = 0, maxDepth = 32): unknown {
+  if (value === null || value === undefined) return value
+  if (typeof value === 'string') return value.length > 8000 ? marker('truncated-string', { length: value.length }) : value
+  if (typeof value === 'number' || typeof value === 'boolean') return value
+  if (typeof value === 'bigint') return marker('bigint', { text: `${value}` })
+  if (typeof value === 'function') return marker('function', { name: (value as (...args: unknown[]) => unknown).name || 'anonymous' })
+  if (typeof value === 'symbol') return marker('symbol')
+  if (depth >= maxDepth) return marker('max-depth')
+
+  if (seen.has(value)) return marker('circular')
   seen.add(value)
   try {
     if (Array.isArray(value)) {
-      const head = value.slice(0, 200).map(item => safeSerialize(item, seen, depth + 1))
-      if (value.length > 200) head.push(`[${value.length - 200} more]`)
+      const cap = 500
+      const head = value.slice(0, cap).map(item => safeSerialize(item, seen, depth + 1))
+      if (value.length > cap) head.push(marker('truncated', { count: value.length - cap }))
       return head
     }
     const out: Record<string, unknown> = {}
     const keys = Object.keys(value)
-    for (const key of keys.slice(0, 100)) {
+    const cap = 500
+    for (const key of keys.slice(0, cap)) {
       out[key] = safeSerialize((value as Record<string, unknown>)[key], seen, depth + 1)
     }
-    if (keys.length > 100) out['[truncated]'] = `${keys.length - 100} more keys`
+    if (keys.length > cap) out['…'] = marker('truncated-keys', { count: keys.length - cap })
     return out
   } finally {
     seen.delete(value)
@@ -148,11 +178,12 @@ export function buildDshFlowTree(ctx: Context): DshFlowTree {
   const visit = (fiber: Fiber): DshFlowNode => ({
     id: String(fiber.uid ?? ''),
     name: fiber.name,
+    packageName: packageNameOf(fiber),
     state: stateOf(fiber),
     anonymous: !fiber.runtime?.name && fiber.uid !== 0,
     provides: providedServices(ctx, fiber),
     inject: Object.keys(fiber.inject),
-    config: safeSerialize(fiber.config),
+    config: safeSerialize(fiber.config, new WeakSet(), 0, 8),
     children: (childrenOf.get(fiber) ?? [])
       .map(visit)
       .sort((left, right) => left.name.localeCompare(right.name)),
@@ -183,6 +214,6 @@ export function getServiceDetail(ctx: Context, name: string): DshFlowServiceDeta
     name: impl.name,
     owner: impl.fiber.name,
     state: stateOf(impl.fiber),
-    value: safeSerialize(impl.value, new WeakSet(), 0, 8),
+    value: safeSerialize(impl.value, new WeakSet(), 0, 32),
   }
 }

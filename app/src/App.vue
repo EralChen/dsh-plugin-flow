@@ -12,6 +12,7 @@ const selected = ref<DshFlowNodeProps | null>(null)
 const serviceDetail = ref<DshFlowServiceDetail | null>(null)
 const connected = ref(false)
 const flowRef = ref<InstanceType<typeof DshFlow>>()
+const searchText = ref('')
 const debugText = ref('')
 const debugStatus = ref('')
 
@@ -59,7 +60,13 @@ async function openService(name: string): Promise<void> {
   try {
     serviceDetail.value = await fetchServiceDetail(name)
   } catch (error) {
-    console.error(error)
+    const notFound = error instanceof Error && error.message.includes('404')
+    serviceDetail.value = {
+      name,
+      owner: notFound ? '（未提供 · 插件正在等待该服务）' : '（获取失败）',
+      state: 'pending',
+      value: notFound ? null : String(error),
+    }
   }
 }
 
@@ -93,13 +100,19 @@ async function onDebug(): Promise<void> {
         <span class="badge" :class="connected ? 'badge--on' : 'badge--off'">
           {{ connected ? 'live' : 'demo' }}
         </span>
+        <input
+          v-model="searchText"
+          class="toolbar__search"
+          type="search"
+          placeholder="搜索节点…"
+        >
         <button class="btn" @click="onAutoLayout">自动布局</button>
       </div>
     </header>
 
     <div class="body">
       <main class="canvas">
-        <DshFlow v-if="tree" ref="flowRef" :tree="tree" @node-click="onNodeClick" />
+        <DshFlow v-if="tree" ref="flowRef" :tree="tree" :search="searchText" @node-click="onNodeClick" />
         <div v-else class="canvas__empty">加载中…</div>
       </main>
 
@@ -109,18 +122,29 @@ async function onDebug(): Promise<void> {
             <h2>{{ selected.name }}</h2>
             <span class="chip chip--state" :style="{ borderColor: selected.color, color: selected.color }">{{ selected.state }}</span>
           </div>
+          <p v-if="selected.packageName" class="side__pkg" :title="selected.packageName">{{ selected.packageName }}</p>
           <p class="side__hint">{{ selected.categoryLabel }} · id {{ selected.id || 'root' }}</p>
 
           <h3>提供 (provides)</h3>
           <p v-if="selected.provides.length === 0" class="muted">—</p>
           <div v-else class="chips">
-            <span v-for="item in selected.provides" :key="item" class="chip">{{ item }}</span>
+            <span
+              v-for="item in selected.provides"
+              :key="item"
+              class="chip chip--svc"
+              @click="openService(item)"
+            >{{ item }}</span>
           </div>
 
           <h3>注入 (inject)</h3>
           <p v-if="selected.inject.length === 0" class="muted">—</p>
           <div v-else class="chips">
-            <span v-for="item in selected.inject" :key="item" class="chip">{{ item }}</span>
+            <span
+              v-for="item in selected.inject"
+              :key="item"
+              class="chip chip--svc"
+              @click="openService(item)"
+            >{{ item }}</span>
           </div>
 
           <template v-if="selected.config !== undefined">
@@ -136,7 +160,7 @@ async function onDebug(): Promise<void> {
         </template>
 
         <details class="side__details">
-          <summary>服务 ({{ tree?.services.length ?? 0 }})</summary>
+          <summary>全局服务 ({{ tree?.services.length ?? 0 }})</summary>
           <ul>
             <li
               v-for="svc in tree?.services ?? []"
@@ -212,6 +236,19 @@ async function onDebug(): Promise<void> {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.toolbar__search {
+  flex: none;
+  width: 200px;
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1f2937;
+}
+.toolbar__search:focus {
+  outline: none;
+  border-color: #2563eb;
 }
 .badge {
   font-size: 12px;
@@ -309,6 +346,13 @@ async function onDebug(): Promise<void> {
   color: #9ca3af;
   font-size: 12px;
 }
+.side__pkg {
+  margin: 0 0 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #6b7280;
+  word-break: break-all;
+}
 .detail__head {
   display: flex;
   align-items: flex-start;
@@ -344,6 +388,13 @@ async function onDebug(): Promise<void> {
   flex: none;
   font-weight: 600;
   text-transform: uppercase;
+}
+.chip--svc {
+  cursor: pointer;
+}
+.chip--svc:hover {
+  border-color: #2563eb;
+  color: #2563eb;
 }
 .side__details {
   margin-top: 12px;

@@ -33,6 +33,35 @@ function kindOf(value: unknown): Kind {
 const kind = computed(() => kindOf(props.value))
 const isContainer = computed(() => kind.value === 'object' || kind.value === 'array')
 
+/** Structured marker emitted by the host serializer for JSON-uncarriable values. */
+interface Marker {
+  $dsh: string
+  [key: string]: unknown
+}
+
+const marker = computed<Marker | null>(() => {
+  const value = props.value
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const kind = (value as Record<string, unknown>).$dsh
+    if (typeof kind === 'string') return value as Marker
+  }
+  return null
+})
+
+function markerLabel(m: Marker): string {
+  switch (m.$dsh) {
+    case 'function': return `ƒ ${String(m.name ?? 'anonymous')}`
+    case 'max-depth': return '… 深度上限'
+    case 'circular': return '[Circular]'
+    case 'symbol': return '[Symbol]'
+    case 'bigint': return `${String(m.text ?? '')}n`
+    case 'truncated': return `… 还有 ${String(m.count ?? '')} 项`
+    case 'truncated-keys': return `… 还有 ${String(m.count ?? '')} 个键`
+    case 'truncated-string': return `… 长字符串（${String(m.length ?? '')}）`
+    default: return m.$dsh
+  }
+}
+
 interface Entry { key: string; value: unknown }
 
 const entries = computed<Entry[]>(() => {
@@ -47,15 +76,21 @@ const entries = computed<Entry[]>(() => {
   return []
 })
 
-const isExpandable = computed(() => isContainer.value && entries.value.length > 0)
+const isExpandable = computed(() => marker.value === null && isContainer.value && entries.value.length > 0)
 const expanded = ref(props.depth < props.autoExpandDepth)
 
 function toggle(): void {
   if (isExpandable.value) expanded.value = !expanded.value
 }
 
-const shownEntries = computed(() => entries.value.slice(0, props.entriesLimit))
-const hiddenCount = computed(() => Math.max(0, entries.value.length - shownEntries.value.length))
+// Vue DevTools pattern: cap the rendered entries, reveal more on demand.
+const limit = ref(props.entriesLimit)
+const shownEntries = computed(() => entries.value.slice(0, limit.value))
+const hiddenCount = computed(() => Math.max(0, entries.value.length - limit.value))
+
+function showMore(): void {
+  limit.value += props.entriesLimit
+}
 
 const primitiveText = computed(() => {
   const value = props.value
@@ -89,7 +124,8 @@ const collapsedPreview = computed(() => {
       <span v-if="name !== undefined" class="jv__key">{{ name }}</span>
       <span v-if="name !== undefined" class="jv__colon">:</span>
 
-      <template v-if="!isContainer">
+      <span v-if="marker" class="jv__marker" :data-marker="marker.$dsh">{{ markerLabel(marker) }}</span>
+      <template v-else-if="!isContainer">
         <span class="jv__value" :data-kind="kind">{{ primitiveText }}</span>
       </template>
       <template v-else-if="!isExpandable">
@@ -112,7 +148,7 @@ const collapsedPreview = computed(() => {
         :entries-limit="entriesLimit"
       />
       <div v-if="hiddenCount > 0" class="jv__more" :style="{ paddingLeft: `${(depth + 1) * 14}px` }">
-        … {{ hiddenCount }} more
+        <button class="jv__more-btn" @click.stop="showMore">显示更多（还有 {{ hiddenCount }} 项）</button>
       </div>
       <div class="jv__row" :style="{ paddingLeft: `${depth * 14}px` }">
         <span class="jv__caret" />
@@ -156,7 +192,6 @@ const collapsedPreview = computed(() => {
 }
 .jv__key {
   color: #7c3aed;
-  overflow-wrap: anywhere;
 }
 .jv__colon {
   color: #9ca3af;
@@ -194,8 +229,29 @@ const collapsedPreview = computed(() => {
 .jv__preview {
   color: #9ca3af;
 }
+.jv__marker {
+  color: #9ca3af;
+  font-style: italic;
+}
+.jv__marker[data-marker='function'] {
+  color: #7c3aed;
+}
 .jv__more {
   color: #9ca3af;
   font-style: italic;
+}
+.jv__more-btn {
+  margin: 2px 0;
+  padding: 1px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 11px;
+  cursor: pointer;
+}
+.jv__more-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
 }
 </style>

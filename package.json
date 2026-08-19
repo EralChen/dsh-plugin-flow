@@ -10,6 +10,8 @@
     "rm:nm": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },
   "dependencies": {
+    "@antv/graphlib": "^2.0.4",
+    "@antv/layout": "1.2.14-beta.8",
     "@logicflow/core": "^2.2.5",
     "@logicflow/vue-node-registry": "^1.2.5",
     "@vunk/core": "^1.6.9",

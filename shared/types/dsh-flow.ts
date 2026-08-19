@@ -15,6 +15,8 @@ export interface DshFlowNode {
   /** Fiber uid as string; `'0'` is the root. Reserved for v2 control. */
   id: string
   name: string
+  /** Full package name (`@deepseek-ai/dsh-tool-bash`) from the Loader entry. */
+  packageName?: string
   state: DshFlowState
   anonymous?: boolean
   /**

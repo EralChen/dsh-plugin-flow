@@ -23,6 +23,8 @@ export interface DshFlowNode {
   id: string
   /** Plugin display name (`runtime.name`), or `'root'` for the root fiber. */
   name: string
+  /** Full package name (`@deepseek-ai/dsh-tool-bash`) from the Loader entry. */
+  packageName?: string
   /** Lifecycle state of this fiber. */
   state: DshFlowState
   /**

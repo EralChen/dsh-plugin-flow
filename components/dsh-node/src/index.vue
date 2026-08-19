@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<{
   type: 'dsh-node',
 })
 
-const effect = computed(() => ['name', 'state', 'color', 'categoryLabel', 'provides'])
+const effect = computed(() => ['name', 'state', 'color', 'categoryLabel', 'provides', 'matched', 'packageName'])
 
 /** 上入下出：top 是输入桩（passive），bottom 是输出桩（active）。 */
 const getDefaultAnchor: __VkRegisterNode.GetDefaultAnchor = function () {
@@ -34,7 +34,7 @@ const getDefaultAnchor: __VkRegisterNode.GetDefaultAnchor = function () {
     :get-default-anchor="getDefaultAnchor"
   >
     <template #default="{ properties }">
-      <div class="dsh-node" :style="{ '--dsh-cat': properties.color }">
+      <div class="dsh-node" :class="{ 'is-matched': properties.matched }" :title="properties.packageName" :style="{ '--dsh-cat': properties.color }">
         <span class="dsh-node__dot"></span>
         <div class="dsh-node__body">
           <span class="dsh-node__name">{{ properties.name }}</span>
@@ -85,5 +85,9 @@ const getDefaultAnchor: __VkRegisterNode.GetDefaultAnchor = function () {
   font-size: 11px;
   color: #6b7280;
   white-space: nowrap;
+}
+.dsh-node.is-matched {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  border-color: #2563eb !important;
 }
 </style>
