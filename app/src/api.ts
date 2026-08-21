@@ -21,22 +21,6 @@ export function subscribe(handlers: StreamHandlers): () => void {
   return () => source.close()
 }
 
-export interface DebugResult {
-  ok: boolean
-  sessionId?: string
-  error?: string
-}
-
-/** Send one prompt to the first live agent. */
-export async function sendDebug(text: string): Promise<DebugResult> {
-  const res = await fetch(`${BASE}api/debug`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ text }),
-  })
-  return res.json() as Promise<DebugResult>
-}
-
 /** Fetch the deep(er) value projection of one live service. */
 export async function fetchServiceDetail(name: string): Promise<DshFlowServiceDetail> {
   const res = await fetch(`${BASE}api/service/${encodeURIComponent(name)}`)

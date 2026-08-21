@@ -13,10 +13,7 @@ import { dirname, extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import type {} from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-agent'
 import type { ResolvedConfig } from './config'
-import { sendDebugMessage } from './debug'
 import { buildDshFlowTree, getServiceDetail } from './tree'
 import type { DshFlowTree } from './types'
 
@@ -43,16 +40,6 @@ function sendJson(res: ServerResponse, data: unknown): void {
   const body = JSON.stringify(data, null, 2)
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
   res.end(body)
-}
-
-async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
-  let body = ''
-  for await (const chunk of req) body += chunk
-  try {
-    return JSON.parse(body) as Record<string, unknown>
-  } catch {
-    return {}
-  }
 }
 
 /** Minimal SPA static server: traversal is 403, misses fall back to index.html. */
@@ -137,17 +124,6 @@ export function registerDshFlowRoutes(ctx: Context, config: ResolvedConfig): voi
     const sub = pathname.slice(base.length) || '/'
     if (sub === '/api/tree') {
       sendJson(res, buildDshFlowTree(ctx))
-      return
-    }
-    if (sub === '/api/debug' && req.method === 'POST') {
-      const body = await readJsonBody(req)
-      const result = sendDebugMessage(ctx, String(body.text ?? ''))
-      if (!result.ok) {
-        res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' })
-        res.end(JSON.stringify(result))
-        return
-      }
-      sendJson(res, result)
       return
     }
     if (sub === '/api/events') {

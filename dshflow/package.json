@@ -1,7 +1,7 @@
 {
   "name": "dshflow",
   "version": "0.0.1",
-  "description": "DeepSeek Harness plugin: render the live Cordis plugin tree as a flow diagram, powered by @vunk/flow.",
+  "description": "DeepSeek Harness plugin: render the live Cordis plugin tree as an interactive flow diagram.",
   "license": "MIT",
   "keywords": [
     "dsh",

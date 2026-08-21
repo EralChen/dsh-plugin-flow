@@ -11,18 +11,15 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import type {} from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-agent'
 import { DEFAULT_BASE_PATH, DEFAULT_POLL_INTERVAL_MS, resolveConfig } from './config'
 import type { Config as DshFlowConfig } from './config'
-import { sendDebugMessage } from './debug'
 import { registerDshFlowRoutes } from './server'
 import { buildDshFlowTree, getServiceDetail } from './tree'
 
 export const name = 'dshflow'
-export const inject = ['webServer', 'sessions', 'agents']
+export const inject = ['webServer']
 
-export { buildDshFlowTree, getServiceDetail, sendDebugMessage, resolveConfig, DEFAULT_BASE_PATH, DEFAULT_POLL_INTERVAL_MS }
+export { buildDshFlowTree, getServiceDetail, resolveConfig, DEFAULT_BASE_PATH, DEFAULT_POLL_INTERVAL_MS }
 export type { Config as DshFlowConfig, ResolvedConfig } from './config'
 export type * from './types'
 

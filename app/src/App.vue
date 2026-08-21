@@ -4,7 +4,7 @@ import { DshFlow } from '@dshflow/components/dsh-flow'
 import type { DshFlowNodeProps } from '@dshflow/components/dsh-flow'
 import { DshJsonViewer } from '@dshflow/components/json-viewer'
 import type { DshFlowServiceDetail, DshFlowTree } from '@dshflow/shared/types/dsh-flow'
-import { fetchServiceDetail, fetchTree, sendDebug, subscribe } from './api'
+import { fetchServiceDetail, fetchTree, subscribe } from './api'
 import { demoTree } from './demo'
 
 const tree = ref<DshFlowTree | null>(null)
@@ -13,8 +13,6 @@ const serviceDetail = ref<DshFlowServiceDetail | null>(null)
 const connected = ref(false)
 const flowRef = ref<InstanceType<typeof DshFlow>>()
 const searchText = ref('')
-const debugText = ref('')
-const debugStatus = ref('')
 
 let unsubscribe: (() => void) | undefined
 let lastStructural = ''
@@ -67,23 +65,6 @@ async function openService(name: string): Promise<void> {
       state: 'pending',
       value: notFound ? null : String(error),
     }
-  }
-}
-
-async function onDebug(): Promise<void> {
-  const text = debugText.value.trim()
-  if (text === '') return
-  debugStatus.value = '…'
-  try {
-    const result = await sendDebug(text)
-    if (result.ok) {
-      debugStatus.value = `sent → ${result.sessionId ?? ''}`
-      debugText.value = ''
-    } else {
-      debugStatus.value = result.error ?? 'failed'
-    }
-  } catch (error) {
-    debugStatus.value = String(error)
   }
 }
 </script>
@@ -176,17 +157,6 @@ async function onDebug(): Promise<void> {
       </aside>
     </div>
 
-    <footer class="debugbar">
-      <input
-        v-model="debugText"
-        class="debugbar__input"
-        placeholder="debugger：给 agent 发消息，回车发送"
-        @keyup.enter="onDebug"
-      >
-      <button class="btn" @click="onDebug">发送</button>
-      <span class="muted">{{ debugStatus }}</span>
-    </footer>
-
     <div v-if="serviceDetail" class="modal" @click.self="serviceDetail = null">
       <div class="modal__box">
         <div class="modal__head">
@@ -272,28 +242,6 @@ async function onDebug(): Promise<void> {
 }
 .btn:hover {
   background: #f3f4f6;
-}
-.debugbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 16px;
-  border-top: 1px solid #e5e7eb;
-  background: #fff;
-}
-.debugbar__input {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-}
-.debugbar__status {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .body {
   display: flex;
